@@ -9,14 +9,13 @@
 ;(function () {
   const body = document.body
 
-  const debugLog = (...msg) => {
-    return console.debug(
+  const debugLog = (...msg) =>
+    console.debug(
       `%c[Channel Inspect - Debug]%c`,
       "color:#30a7d4;font-weight: 800",
       "color:currentColor",
       ...msg
     )
-  }
 
   /* ================= HELPER FUNCTIONS ================= */
   const createElement = (tag, { id, className }) => {
@@ -31,6 +30,10 @@
 
   const concatItems = (...items) => items.filter(Boolean).join("")
 
+  const arrAt = (item, index = -1) => item.at(index)
+
+  const urlSplitLast = (str) => str.split("/").at(-1)
+
   /* ================= GLOBAL STYLES ================= */
   const _inlineStyles = createElement("style", {
     id: "__kuro-custom-yt-styles",
@@ -41,15 +44,14 @@
       --font: Roboto, Arial, sans-serif;
       --font-500: 500;
       --weight-button: var(--font-500);
-
-			--button-idle:;
-			--button-
+      --button-idle: #a9e0fa;
+      --button-hover: #75d3ff;
     }
-		.__kuro-wrapper {
-			position: relative;
-		}
-  	.__kuro-button-scope {
-    	padding: 0 1.5rem;
+    .__kuro-wrapper {
+      position: relative;
+    }
+    .__kuro-button-scope {
+      padding: 0 1.5rem;
       border: none;
       border-radius: 2rem;
       background: none;
@@ -60,20 +62,20 @@
       display: flex;
       align-items: center;
       gap: 0.33rem;
-			height: 100%;
+      height: 100%;
     }
     .__kuro-metadata {
-    	background: #a9e0fa;
+      background: var(--button-idle);
     }
     .__kuro-metadata:hover {
-    	background: #75d3ff;
+      background: var(--button-hover);
     }
-		.__kuro-metadata-menu-container {
-			position: absolute;
+    .__kuro-metadata-menu-container {
+      position: absolute;
       border-radius: 1.66rem;
-			left: 0.5rem;
+      left: 0.5rem;
       background: white;
-		}
+    }
   `
 
   body.prepend(_inlineStyles)
@@ -91,7 +93,6 @@
     </svg>`
 
   /* ================= MENU STUFF ================= */
-  let isMenuOpen = false
 
   const menuContainer = createElement("div", {
     className: "__kuro-metadata-menu-container",
@@ -100,9 +101,9 @@
   // Hide element on initial load
   window.addEventListener("load", () => (menuContainer.style.display = "none"))
 
-  menuContainer.innerHTML = `<div>Ulol mo</div>`
-
   /* ================= METADATA BUTTON ================= */
+  let isMenuOpen = false
+
   const metadataButton = createElement("button", {
     className: "__kuro-button-scope __kuro-metadata",
   })
@@ -145,14 +146,14 @@
     const hasChannelbanner = _header.banner
 
     const channelBanner = hasChannelbanner
-      ? _header.banner.thumbnails.at(-1).url
+      ? arrAt(_header.banner.thumbnails).url
       : "none"
 
     const channelBannerFull = hasChannelbanner
-      ? _header.tvBanner.thumbnails.at(-1).url
+      ? arrAt(_header.tvBanner.thumbnails).url
       : "none"
 
-    const channelAvatar = _metadata.avatar.thumbnails.at(0).url
+    const channelAvatar = arrAt(_metadata.avatar.thumbnails, 0).url
 
     const channelData = {
       imgBanner: channelBanner,
@@ -160,9 +161,9 @@
       // Split the url and append to a high quality image by modifying its complicated positional arguments
       imgAvatar: `${channelAvatar.split("=s").at(0)}=s9999`,
       channelIdUrl: _metadata.channelUrl,
-      channelId: _metadata.channelUrl.split("/").at(-1),
+      channelId: urlSplitLast(_metadata.channelUrl),
       channelName: _header.title,
-      channelHandle: _metadata.vanityChannelUrl.split("/").at(-1),
+      channelHandle: urlSplitLast(_metadata.vanityChannelUrl),
       channelDescription: _metadata.description,
       channelVideos: _header.videosCountText.runs.at(0).text,
       channelSubs: _header.subscriberCountText.simpleText,
@@ -185,6 +186,13 @@
 
       const metaRekt = metadataButton.getBoundingClientRect()
       menuContainer.style.top = `${metaRekt.height + 12}px`
+
+      menuContainer.innerHTML = `
+			<div style="font-size: 16px; padding: 1.5rem">
+				<div>Client response from <code>ev.details.response</code>:</div>
+
+				<code>${JSON.stringify(channelData).split(',').join(',\n')}</code>
+			</div>`
     }
 
     debugLog("Data response", channelData)
