@@ -62,7 +62,6 @@
       display: flex;
       align-items: center;
       gap: 0.33rem;
-      height: 100%;
     }
     .__kuro-metadata {
       background: var(--button-idle);
@@ -70,16 +69,23 @@
     .__kuro-metadata:hover {
       background: var(--button-hover);
     }
-    .__kuro-metadata-menu-container {
-      position: absolute;
-      border-radius: 1.66rem;
-      left: 0.5rem;
+    .__kuro-hidden {
+      display: none !important;
+    }
+    .__kuro-channel-options-modal {
       background: white;
+      border-radius: 1.66rem;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate3d(-50%, -50%, 0);
+      box-shadow: 0 0 21px rgba(0, 0, 0, 0.22);
+      padding: 1rem;
+      z-index: 9999;
+      font-size: 16px;
+      font-weight: var(--font);
     }
   `
-
-  body.prepend(_inlineStyles)
-
   /* ================= SVG ICONS BY LUCIDE ================= */
   const icons = {
     chevronDown: `<path d="m6 9 6 6 6-6"/>`,
@@ -92,14 +98,15 @@
       ${htmlString}
     </svg>`
 
-  /* ================= MENU STUFF ================= */
-
-  const menuContainer = createElement("div", {
-    className: "__kuro-metadata-menu-container",
+  /* ================= MODAL ================= */
+  const optionsModal = createElement("div", {
+    className: "__kuro-channel-options-modal __kuro-hidden",
   })
 
-  // Hide element on initial load
-  window.addEventListener("load", () => (menuContainer.style.display = "none"))
+  optionsModal.innerHTML = `
+    <kuro-tab-container>TABS LOL</kuro-tab-container>
+    <kuro-tab-view>MARRY ME</kuro-tab-view>
+  `
 
   /* ================= METADATA BUTTON ================= */
   let isMenuOpen = false
@@ -116,17 +123,11 @@
   metadataButton.addEventListener("click", () => {
     isMenuOpen = !isMenuOpen
 
-    !isMenuOpen
-      ? (menuContainer.style.display = "none")
-      : (menuContainer.style.display = "block")
+    optionsModal.classList.toggle("__kuro-hidden")
   })
 
-  /* ================= WRAPPER ================= */
-  const wrapper = createElement("div", {
-    className: "__kuro-wrapper",
-  })
-
-  wrapper.prepend(metadataButton, menuContainer)
+  // Mount styles and modals to my <body>
+  body.prepend(_inlineStyles, optionsModal)
 
   /* ================= GET CHANNEL DATA  ================= */
   let debounceChannelId = ""
@@ -182,7 +183,7 @@
     const channelButtonContainer = selectElement("#channel-container #buttons")
 
     if (isChannelPage && channelButtonContainer) {
-      channelButtonContainer.appendChild(wrapper)
+      channelButtonContainer.appendChild(metadataButton)
 
       const metaRekt = metadataButton.getBoundingClientRect()
       menuContainer.style.top = `${metaRekt.height + 12}px`
@@ -191,7 +192,7 @@
 			<div style="font-size: 16px; padding: 1.5rem">
 				<div>Client response from <code>ev.details.response</code>:</div>
 
-				<code>${JSON.stringify(channelData).split(',').join(',\n')}</code>
+				<code>${JSON.stringify(channelData).split(",").join(",\n")}</code>
 			</div>`
     }
 
