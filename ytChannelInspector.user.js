@@ -120,11 +120,23 @@
     iconMerge(icons.chevronDown)
   )
 
+  const handleModalState = () => {
+    
+  }
+
   metadataButton.addEventListener("click", () => {
     isMenuOpen = !isMenuOpen
 
     optionsModal.classList.toggle("__kuro-hidden")
+
+    if (isMenuOpen) {
+      window.addEventListener("click", handleModalState)
+    } else {
+      window.removeEventListener("click", handleModalState)
+    }
   })
+
+
 
   // Mount styles and modals to my <body>
   body.prepend(_inlineStyles, optionsModal)
@@ -189,11 +201,11 @@
       menuContainer.style.top = `${metaRekt.height + 12}px`
 
       menuContainer.innerHTML = `
-			<div style="font-size: 16px; padding: 1.5rem">
-				<div>Client response from <code>ev.details.response</code>:</div>
+        <div style="font-size: 16px; padding: 1.5rem">
+          <div>Client response from <code>ev.details.response</code>:</div>
 
-				<code>${JSON.stringify(channelData).split(",").join(",\n")}</code>
-			</div>`
+          <code>${JSON.stringify(channelData).split(",").join(",\n")}</code>
+        </div>`
     }
 
     debugLog("Data response", channelData)
