@@ -11,7 +11,7 @@
 
   const debugLog = (...msg) =>
     console.debug(
-      `%c[Channel Inspect - Debug]%c`,
+      `%c[Channel Inspect — Debug]%c`,
       "color:#30a7d4;font-weight: 800",
       "color:currentColor",
       ...msg
@@ -119,36 +119,71 @@
     "Options",
     iconMerge(icons.chevronDown)
   )
+  
+  let isOpenMenuFirstTime = false
 
-  const handleModalState = () => {
+  const handleModalState = (event) => {
+    const DOMTarget = event.target
     
+    const handleDOMTargets = (element) => {
+      const rootTarget = DOMTarget === element
+      const parentRootTarget = DOMTarget.parentElement === element
+      
+      return !rootTarget && !parentRootTarget
+    }
+    
+    const containsModalTarget = handleDOMTargets(optionsModal)
+    const containsBtnTarget = handleDOMTargets(metadataButton)
+    
+    // A safe-guard to prevent the dialog from immediately closing
+    // Then set to false afterwards
+    if (isOpenMenuFirstTime) {
+      isOpenMenuFirstTime = false
+      return
+    }
+    
+    if(!(containsBtnTarget && !containsModalTarget)) {
+    	console.log("Trigger menu close")
+    }
   }
-
+  
   metadataButton.addEventListener("click", () => {
     isMenuOpen = !isMenuOpen
 
     optionsModal.classList.toggle("__kuro-hidden")
 
     if (isMenuOpen) {
+      isOpenMenuFirstTime = true
       window.addEventListener("click", handleModalState)
     } else {
       window.removeEventListener("click", handleModalState)
     }
   })
-
-
-
+  
   // Mount styles and modals to my <body>
   body.prepend(_inlineStyles, optionsModal)
 
+  const handleModalKeys = (event) => {
+    console.log(event)
+  }
+  
   /* ================= GET CHANNEL DATA  ================= */
   let debounceChannelId = ""
-
-  const handleChannelData = (ev) => {
-    const response = ev.detail.response
+  
+  const handleChannelData = (event) => {
+    const response = event.detail.response
 
     const isChannelPage = response.page === "channel"
-    if (!isChannelPage) return
+    
+    // Remove keydown listeners if there are any prior visiting the channel page
+    // to save performance
+    if (!isChannelPage) {
+      debugLog("Keydown event listener removed")
+      window.removeEventListener("keydown", handleModalKeys)
+      return
+    }
+    
+    window.addEventListener("keydown", handleModalKeys)
 
     const {
       header: { c4TabbedHeaderRenderer: _header },
@@ -196,16 +231,6 @@
 
     if (isChannelPage && channelButtonContainer) {
       channelButtonContainer.appendChild(metadataButton)
-
-      const metaRekt = metadataButton.getBoundingClientRect()
-      menuContainer.style.top = `${metaRekt.height + 12}px`
-
-      menuContainer.innerHTML = `
-        <div style="font-size: 16px; padding: 1.5rem">
-          <div>Client response from <code>ev.details.response</code>:</div>
-
-          <code>${JSON.stringify(channelData).split(",").join(",\n")}</code>
-        </div>`
     }
 
     debugLog("Data response", channelData)
