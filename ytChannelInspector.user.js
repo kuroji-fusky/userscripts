@@ -119,34 +119,31 @@
     "Options",
     iconMerge(icons.chevronDown)
   )
-  
+
   let isOpenMenuFirstTime = false
 
-  const handleModalState = (event) => {
-    const DOMTarget = event.target
-    
-    const handleDOMTargets = (element) => {
-      const rootTarget = DOMTarget === element
-      const parentRootTarget = DOMTarget.parentElement === element
-      
-      return !rootTarget && !parentRootTarget
+  const handleModalState = () => {
+    const selectDOMTargetBounds = (event) => {
+      const DOMTarget = event.target
+
+      return !(DOMTarget === element) && !(DOMTarget.parentElement === element)
     }
-    
-    const containsModalTarget = handleDOMTargets(optionsModal)
-    const containsBtnTarget = handleDOMTargets(metadataButton)
-    
+
+    const containsModalTarget = selectDOMTargetBounds(optionsModal)
+    const containsBtnTarget = selectDOMTargetBounds(metadataButton)
+
     // A safe-guard to prevent the dialog from immediately closing
     // Then set to false afterwards
     if (isOpenMenuFirstTime) {
       isOpenMenuFirstTime = false
       return
     }
-    
-    if(!(containsBtnTarget && !containsModalTarget)) {
-    	console.log("Trigger menu close")
+
+    if (!(containsBtnTarget && !containsModalTarget)) {
+      console.log("Trigger menu close")
     }
   }
-  
+
   metadataButton.addEventListener("click", () => {
     isMenuOpen = !isMenuOpen
 
@@ -159,22 +156,22 @@
       window.removeEventListener("click", handleModalState)
     }
   })
-  
+
   // Mount styles and modals to my <body>
   body.prepend(_inlineStyles, optionsModal)
 
   const handleModalKeys = (event) => {
     console.log(event)
   }
-  
+
   /* ================= GET CHANNEL DATA  ================= */
   let debounceChannelId = ""
-  
+
   const handleChannelData = (event) => {
     const response = event.detail.response
 
     const isChannelPage = response.page === "channel"
-    
+
     // Remove keydown listeners if there are any prior visiting the channel page
     // to save performance
     if (!isChannelPage) {
@@ -182,7 +179,7 @@
       window.removeEventListener("keydown", handleModalKeys)
       return
     }
-    
+
     window.addEventListener("keydown", handleModalKeys)
 
     const {
