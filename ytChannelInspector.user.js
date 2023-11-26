@@ -1,14 +1,12 @@
 // ==UserScript==
 // @name         YT Channel Inspector
-// @description  This script injects an additional button from a channel page to get in-depth channel metadata
-// @version      1
+// @description  Creates a new  button from a channel page to get in-depth channel metadata na dother functionalities
+// @version      1.1
 // @grant        none
 // @author       Kuroji Fusky
 // @match        https://www.youtube.com/*
 // ==/UserScript==
 ;(function () {
-  const body = document.body
-
   const debugLog = (...msg) =>
     console.debug(
       `%c[Channel Inspect — Debug]%c`,
@@ -30,9 +28,11 @@
 
   const concatItems = (...items) => items.filter(Boolean).join("")
 
-  const arrAt = (item, index = -1) => item.at(index)
+  const arrIndex = (item, index = -1) => item.at(index)
 
-  const urlSplitLast = (str) => str.split("/").at(-1)
+  const urlSplitLast = (str) => arrIndex(str.split("/"))
+
+  const $body = document.body
 
   /* ================= GLOBAL STYLES ================= */
   const _inlineStyles = createElement("style", {
@@ -141,6 +141,7 @@
 
     if (!(containsBtnTarget && !containsModalTarget)) {
       console.log("Trigger menu close")
+      isMenuOpen = false
     }
   }
 
@@ -158,13 +159,13 @@
   })
 
   // Mount styles and modals to my <body>
-  body.prepend(_inlineStyles, optionsModal)
+  $body.prepend(_inlineStyles, optionsModal)
 
   const handleModalKeys = (event) => {
     console.log(event)
   }
 
-  /* ================= GET CHANNEL DATA  ================= */
+  /* ================= YT CHANNEL DATA ================= */
   let debounceChannelId = ""
 
   const handleChannelData = (event) => {
@@ -173,7 +174,6 @@
     const isChannelPage = response.page === "channel"
 
     // Remove keydown listeners if there are any prior visiting the channel page
-    // to save performance
     if (!isChannelPage) {
       debugLog("Keydown event listener removed")
       window.removeEventListener("keydown", handleModalKeys)
@@ -188,29 +188,37 @@
     } = response.response
 
     const channelName = _header.title
+    const channelAvatar = arrIndex(_metadata.avatar.thumbnails, 0).url
     const hasChannelbanner = _header.banner
 
     const channelBanner = hasChannelbanner
-      ? arrAt(_header.banner.thumbnails).url
+      ? arrIndex(_header.banner.thumbnails).url
       : "none"
 
     const channelBannerFull = hasChannelbanner
-      ? arrAt(_header.tvBanner.thumbnails).url
+      ? arrIndex(_header.tvBanner.thumbnails).url
       : "none"
 
-    const channelAvatar = arrAt(_metadata.avatar.thumbnails, 0).url
+    const channelVideos = _header.videosCountText
+      ? arrIndex(_header.videosCountText.runs, 0)
+      : 0
+
+    const setFullRes = (string, splitter) => {
+      return `${arrIndex(string.split(splitter), 0)}${splitter}9999`
+    }
 
     const channelData = {
       imgBanner: channelBanner,
       imgBannerFull: channelBannerFull,
-      // Split the url and append to a high quality image by modifying its complicated positional arguments
-      imgAvatar: `${channelAvatar.split("=s").at(0)}=s9999`,
+      imgBannerFullHighRes: setFullRes(channelBannerFull, "=w"),
+      imgAvatar: channelAvatar,
+      imgAvatarHighRes: setFullRes(channelAvatar, "=s"),
       channelIdUrl: _metadata.channelUrl,
       channelId: urlSplitLast(_metadata.channelUrl),
-      channelName: _header.title,
+      channelName,
       channelHandle: urlSplitLast(_metadata.vanityChannelUrl),
       channelDescription: _metadata.description,
-      channelVideos: _header.videosCountText.runs.at(0).text,
+      channelVideos,
       channelSubs: _header.subscriberCountText.simpleText,
     }
 
