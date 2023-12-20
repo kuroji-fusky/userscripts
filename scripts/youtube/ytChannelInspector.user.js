@@ -12,7 +12,7 @@
       `%c[Channel Inspect — Debug]%c`,
       "color:#30a7d4;font-weight: 800",
       "color:currentColor",
-      ...msg
+      ...msg,
     )
 
   /* ================= HELPER FUNCTIONS ================= */
@@ -117,7 +117,7 @@
 
   metadataButton.innerHTML = concatItems(
     "Options",
-    iconMerge(icons.chevronDown)
+    iconMerge(icons.chevronDown),
   )
 
   let isOpenMenuFirstTime = false

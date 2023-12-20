@@ -9,7 +9,7 @@
 
 ;(function () {
   const links = document.querySelectorAll(
-    'a[href^="https://www.youtube.com/redirect?"]'
+    'a[href^="https://www.youtube.com/redirect?"]',
   )
 
   const filterNullItems = (a) => {
@@ -18,7 +18,7 @@
 
   const filteredLinks = Array.from(links).map((link) => {
     const hasRedirect = link.href.startsWith(
-      "https://www.youtube.com/redirect?"
+      "https://www.youtube.com/redirect?",
     )
 
     if (hasRedirect) return link
@@ -31,7 +31,7 @@
     // Strip any "&v=" params for link shorteners
     const hasVParam = stripRedirect.includes("&v=")
     const decodedLink = decodeURIComponent(
-      !hasVParam ? stripRedirect : stripRedirect.split("&v=")[0]
+      !hasVParam ? stripRedirect : stripRedirect.split("&v=")[0],
     )
 
     // Add "https://" if link doesn't have any

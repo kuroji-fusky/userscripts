@@ -1,8 +1,11 @@
-# Kuro's YouTube UserScripts
+# Kuro's UserScripts
 
-A collection of browser scripts I use specifically for YouTube
+A collection of browser scripts I use
 
-## Features I've written
+## Scripts I've concocted
 
-- A channel inspector to get data with full banner and high quality avatar
-- Sanitize external links by replacing `youtube.com?redirect=`
+- YouTube
+  - A channel inspector to get data with full banner and high quality avatar
+  - Sanitize external links by replacing `youtube.com?redirect=`
+- Cloudflare
+  - WAF extractor from Cloudflare Dashboard
