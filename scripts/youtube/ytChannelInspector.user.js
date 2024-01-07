@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         YT Channel Inspector
-// @description  Creates a new  button from a channel page to get in-depth channel metadata na dother functionalities
+// @description  This script injects an additional button from a channel page to get in-depth channel metadata
 // @version      1.1
 // @grant        none
 // @author       Kuroji Fusky
 // @match        https://www.youtube.com/*
 // ==/UserScript==
 ;(function () {
+  "use strict"
   const debugLog = (...msg) =>
     console.debug(
       `%c[Channel Inspect — Debug]%c`,
@@ -16,156 +17,268 @@
     )
 
   /* ================= HELPER FUNCTIONS ================= */
-  const createElement = (tag, { id, className }) => {
-    const element = document.createElement(tag)
+  const selectElement = (selector) => document.querySelector(selector)
+  const arrIndex = (item, index = -1) => item.at(index)
+  const urlSplitLast = (str) => str.split("/").at(-1)
+
+  const ce = (tag, { id, className, ...otherAttrs }, contents) => {
+    const svgNSTags = [
+      "svg",
+      "circle",
+      "path",
+      "g",
+      "rect",
+      "polygon",
+      "polyline",
+      "radialGradient",
+      "linearGradient",
+      "stop",
+      "eclipse",
+    ]
+
+    const element = svgNSTags.includes(tag)
+      ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+      : document.createElement(tag)
+
     if (id) element.id = id
-    if (className) element.className = className
+    if (className) element.classList.add(className)
+
+    if (otherAttrs) {
+      Object.entries(otherAttrs).forEach(([k, v]) =>
+        svgNSTags.includes(tag)
+          ? element.setAttributeNS(null, k, v)
+          : element.setAttribute(k, v),
+      )
+    }
+
+    if (contents) {
+      if (Array.isArray(contents)) contents.map((item) => element.append(item))
+      if (!Array.isArray(contents)) element.textContent = contents
+    }
 
     return element
   }
 
-  const selectElement = (selector) => document.querySelector(selector)
-
-  const concatItems = (...items) => items.filter(Boolean).join("")
-
-  const arrIndex = (item, index = -1) => item.at(index)
-
-  const urlSplitLast = (str) => arrIndex(str.split("/"))
-
-  const $body = document.body
-
   /* ================= GLOBAL STYLES ================= */
-  const _inlineStyles = createElement("style", {
-    id: "__kuro-custom-yt-styles",
-  })
-
-  _inlineStyles.textContent = `
-    :root {
-      --font: Roboto, Arial, sans-serif;
-      --font-500: 500;
-      --weight-button: var(--font-500);
-      --button-idle: #a9e0fa;
-      --button-hover: #75d3ff;
-    }
-    .__kuro-wrapper {
-      position: relative;
-    }
-    .__kuro-button-scope {
-      padding: 0 1.5rem;
+  const _globalStyles = ce(
+    "style",
+    {},
+    `
+    .kuro-yt-inspect-button {
+      background: #a9e0fa;
       border: none;
       border-radius: 2rem;
-      background: none;
-      font-family: var(--font);
-      font-weight: var(--weight-button);
+      font-family: Roboto, sans-serif;
+      font-weight: 500;
       margin: 0 0.5rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 0.33rem;
+      color: currentColor;
+      stroke: currentColor;
+      padding: 0 1.75rem;
     }
-    .__kuro-metadata {
-      background: var(--button-idle);
+    .kuro-yt-inspect-button:hover {
+      background: #75d3ff;
     }
-    .__kuro-metadata:hover {
-      background: var(--button-hover);
-    }
-    .__kuro-hidden {
-      display: none !important;
-    }
-    .__kuro-channel-options-modal {
-      background: white;
-      border-radius: 1.66rem;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate3d(-50%, -50%, 0);
-      box-shadow: 0 0 21px rgba(0, 0, 0, 0.22);
-      padding: 1rem;
-      z-index: 9999;
-      font-size: 16px;
-      font-weight: var(--font);
-    }
-  `
-  /* ================= SVG ICONS BY LUCIDE ================= */
+  `,
+  )
+  /* ================= SVG ICONS ================= */
+  const svgWrapper = (size = "24", icon) =>
+    ce(
+      "svg",
+      {
+        width: size,
+        height: size,
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+      },
+      icon,
+    )
+
+  // Icons provided by lucide.dev
   const icons = {
-    chevronDown: `<path d="m6 9 6 6 6-6"/>`,
-    banner: `<path d="M3 2h18"/><rect width="18" height="12" x="3" y="6" rx="2"/><path d="M3 22h18"/>`,
-    avatar: `<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 21v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>`,
+    chevronDown: [ce("path", { d: "m6 9 6 6 6-6" })],
+    avatar: [
+      ce("rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }),
+      ce("circle", { cx: "12", cy: "10", r: "3" }),
+      ce("path", { d: "M7 21v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" }),
+    ],
+    close: [ce("path", { d: "M18 6 6 18" }), ce("path", { d: "m6 6 12 12" })],
+    copy: [
+      ce("rect", {
+        width: "14",
+        height: "14",
+        x: "8",
+        y: "8",
+        rx: "2",
+        ry: "2",
+      }),
+      ce("path", {
+        d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2",
+      }),
+    ],
   }
 
-  const iconMerge = (htmlString) =>
-    `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      ${htmlString}
-    </svg>`
-
-  /* ================= MODAL ================= */
-  const optionsModal = createElement("div", {
-    className: "__kuro-channel-options-modal __kuro-hidden",
-  })
-
-  optionsModal.innerHTML = `
-    <kuro-tab-container>TABS LOL</kuro-tab-container>
-    <kuro-tab-view>MARRY ME</kuro-tab-view>
-  `
-
-  /* ================= METADATA BUTTON ================= */
-  let isMenuOpen = false
-
-  const metadataButton = createElement("button", {
-    className: "__kuro-button-scope __kuro-metadata",
-  })
-
-  metadataButton.innerHTML = concatItems(
-    "Options",
-    iconMerge(icons.chevronDown),
+  /* ================= MODAL CONTENTS START ================= */
+  // Writing UIs in pure JavaScript is painful and error prone... and I love it (send help)
+  // I really need to touch grass lol
+  const _scopedStyles = ce(
+    "style",
+    {},
+    `
+    :host * {
+      font-family: Roboto, sans-serif, system-ui;
+    }
+    button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: currentColor;
+    }
+    button#close{
+      transition: background-color 150ms ease;
+    }
+    button#close:hover {
+      background-color: rgb(255 255 255 / 0.5);
+    }
+    #modal {
+      display: none;
+    }
+    :host(.active) #modal {
+      display: block;
+    }
+    #backdrop {
+      transition: opacity 200ms ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    :host(.active) #backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  `,
   )
 
-  let isOpenMenuFirstTime = false
+  const inspectorModalRoot = ce("div", {
+    className: "kuro-channel-inspector",
+    style: "position: relative; z-index: 3000;",
+  })
 
-  const handleModalState = () => {
-    const selectDOMTargetBounds = (event) => {
-      const DOMTarget = event.target
+  const inspectorShadow = inspectorModalRoot.attachShadow({ mode: "open" })
 
-      return !(DOMTarget === element) && !(DOMTarget.parentElement === element)
-    }
+  const tabItem = (name) =>
+    ce("button", { class: "kuro-tab-item", style: `padding: 0.5rem` }, name)
 
-    const containsModalTarget = selectDOMTargetBounds(optionsModal)
-    const containsBtnTarget = selectDOMTargetBounds(metadataButton)
+  const closeBtn = ce(
+    "button",
+    {
+      id: "close",
+      style: `border-radius: 50%;`,
+    },
+    [svgWrapper("28", icons.close)],
+  )
 
-    // A safe-guard to prevent the dialog from immediately closing
-    // Then set to false afterwards
-    if (isOpenMenuFirstTime) {
-      isOpenMenuFirstTime = false
-      return
-    }
+  const titleBar = ce(
+    "div",
+    {
+      style: `display: flex; justify-content: space-between; align-items: center;`,
+    },
+    [
+      ce(
+        "div",
+        {
+          style: `display: flex; column-gap: 0.1rem`,
+        },
+        [tabItem("Channel info"), tabItem("Others"), tabItem("Raw data")],
+      ),
+      closeBtn,
+    ],
+  )
 
-    if (!(containsBtnTarget && !containsModalTarget)) {
-      console.log("Trigger menu close")
-      isMenuOpen = false
-    }
+  // ==================== Inspect tab ===================-- //
+  const inspectTab = ce("div", { className: "inspect-tab" }, ["Inspect lmao"])
+
+  // ==================== Others tab ===================-- //
+  const otherTab = ce("div", { className: "inspect-tab" }, ["Others lmao"])
+
+  // ==================== Raw data tab ===================-- //
+  const rawDataTab = ce("div", { className: "inspect-tab" }, ["Raw data lmao"])
+
+  const _modalContainer = ce(
+    "div",
+    {
+      id: "modal",
+      style: `
+      position: fixed;
+      z-index: 2;
+      inset: 50% 0 0 50%;
+      transform: translate3d(-50%, -50%, 0);
+      border-radius: 0.75rem;
+      background: #2e2e2e;
+      color: #e7e7e7;
+      padding: 1.25rem;`,
+    },
+    [
+      ce("div", {}, [titleBar]),
+      ce("div", { style: `font-size: 1.66rem;` }, [
+        inspectTab,
+        otherTab,
+        rawDataTab,
+      ]),
+    ],
+  )
+
+  const _backdrop = ce("div", {
+    id: "backdrop",
+    style: `
+    background-color: rgb(0 0 0 / 0.33);
+    position: fixed;
+    inset: 0;
+    z-index: 1;`,
+  })
+
+  inspectorShadow.append(_scopedStyles, _modalContainer, _backdrop)
+
+  /* ================= MODAL CONTENTS END ================= */
+
+  const closeInspectorModal = () => {
+    inspectorModalRoot.classList.remove("active")
   }
 
+  _backdrop.addEventListener("click", closeInspectorModal)
+  closeBtn.addEventListener("click", closeInspectorModal)
+
+  /* ================= INJECT METADATA BUTTON ================= */
+  const metadataButton = ce(
+    "button",
+    {
+      className: "kuro-yt-inspect-button",
+    },
+    [svgWrapper("24", icons.avatar), ce("span", {}, "Inspect channel")],
+  )
+
+  // Mount styles and modals to my <body>
+  document.head.appendChild(_globalStyles)
+  document.body.prepend(inspectorModalRoot)
+
   metadataButton.addEventListener("click", () => {
-    isMenuOpen = !isMenuOpen
+    inspectorModalRoot.classList.add("active")
+  })
 
-    optionsModal.classList.toggle("__kuro-hidden")
-
-    if (isMenuOpen) {
-      isOpenMenuFirstTime = true
-      window.addEventListener("click", handleModalState)
-    } else {
-      window.removeEventListener("click", handleModalState)
+  window.addEventListener("keydown", (e) => {
+    if (inspectorModalRoot.classList.contains("active") && e.key == "Escape") {
+      closeInspectorModal()
     }
   })
 
-  // Mount styles and modals to my <body>
-  $body.prepend(_inlineStyles, optionsModal)
-
+  /* ================= YT CHANNEL DATA ================= */
   const handleModalKeys = (event) => {
     console.log(event)
   }
 
-  /* ================= YT CHANNEL DATA ================= */
   let debounceChannelId = ""
 
   const handleChannelData = (event) => {
