@@ -10,8 +10,8 @@
   "use strict"
   const debugLog = (...msg) =>
     console.debug(
-      `%c[Channel Inspect — Debug]%c`,
-      "color:#30a7d4;font-weight: 800",
+      `%c[YT Channel Inspect — Debug]%c`,
+      "color:#30a7d4;font-weight:800",
       "color:currentColor",
       ...msg,
     )
@@ -33,10 +33,11 @@
       "radialGradient",
       "linearGradient",
       "stop",
-      "eclipse",
     ]
 
-    const element = svgNSTags.includes(tag)
+    const containsSVGTag = svgNSTags.includes(tag)
+
+    const element = containsSVGTag
       ? document.createElementNS("http://www.w3.org/2000/svg", tag)
       : document.createElement(tag)
 
@@ -45,16 +46,16 @@
 
     if (otherAttrs) {
       Object.entries(otherAttrs).forEach(([k, v]) =>
-        svgNSTags.includes(tag)
+        containsSVGTag
           ? element.setAttributeNS(null, k, v)
           : element.setAttribute(k, v),
       )
     }
 
-    if (contents) {
-      if (Array.isArray(contents)) contents.map((item) => element.append(item))
-      if (!Array.isArray(contents)) element.textContent = contents
-    }
+    contents &&
+      (Array.isArray(contents)
+        ? contents.forEach((item) => element.append(item))
+        : (element.textContent = contents))
 
     return element
   }
@@ -125,7 +126,7 @@
   /* ================= MODAL CONTENTS START ================= */
   // Writing UIs in pure JavaScript is painful and error prone... and I love it (send help)
   // I really need to touch grass lol
-  const _scopedStyles = ce(
+  const modalStyles = ce(
     "style",
     {},
     `
@@ -138,7 +139,7 @@
       cursor: pointer;
       color: currentColor;
     }
-    button#close{
+    button#close {
       transition: background-color 150ms ease;
     }
     button#close:hover {
@@ -161,6 +162,24 @@
     }
   `,
   )
+  /* ================= COMPONENTS START ================= */
+  const tabItem = (name) => {
+    return ce(
+      "button",
+      { class: "kuro-tab-item", style: `padding: 0.5rem` },
+      name,
+    )
+  }
+
+  const codeBlockComponent = (text, preserve = false) => {
+    return ce("div")
+  }
+
+  const imageComponent = (src, { width, height }) => {
+    return ce("img", { src, alt: "", fetchpriority: "high" })
+  }
+
+  /* ================= COMPONENTS END ================= */
 
   const inspectorModalRoot = ce("div", {
     className: "kuro-channel-inspector",
@@ -169,10 +188,7 @@
 
   const inspectorShadow = inspectorModalRoot.attachShadow({ mode: "open" })
 
-  const tabItem = (name) =>
-    ce("button", { class: "kuro-tab-item", style: `padding: 0.5rem` }, name)
-
-  const closeBtn = ce(
+  const modalCloseBtn = ce(
     "button",
     {
       id: "close",
@@ -181,7 +197,7 @@
     [svgWrapper("28", icons.close)],
   )
 
-  const titleBar = ce(
+  const modalTitleBar = ce(
     "div",
     {
       style: `display: flex; justify-content: space-between; align-items: center;`,
@@ -194,53 +210,56 @@
         },
         [tabItem("Channel info"), tabItem("Others"), tabItem("Raw data")],
       ),
-      closeBtn,
+      modalCloseBtn,
     ],
   )
 
-  // ==================== Inspect tab ===================-- //
-  const inspectTab = ce("div", { className: "inspect-tab" }, ["Inspect lmao"])
+  // ==================== Inspect tab view ===================-- //
+  const modalInspectView = ce("div", { className: "inspect-tab" }, [
+    "Inspect view",
+  ])
 
-  // ==================== Others tab ===================-- //
-  const otherTab = ce("div", { className: "inspect-tab" }, ["Others lmao"])
+  // ==================== Others tab view ===================-- //
+  const modalOtherView = ce("div", { className: "inspect-tab" }, ["Others"])
 
-  // ==================== Raw data tab ===================-- //
-  const rawDataTab = ce("div", { className: "inspect-tab" }, ["Raw data lmao"])
+  // ==================== Raw data tab view ===================-- //
+  const modalRawDataView = ce("div", { className: "inspect-tab" }, [
+    "Raw data lmao",
+  ])
 
-  const _modalContainer = ce(
+  const modalContainer = ce(
     "div",
     {
       id: "modal",
       style: `
       position: fixed;
-      z-index: 2;
+      z-index: 1;
       inset: 50% 0 0 50%;
       transform: translate3d(-50%, -50%, 0);
-      border-radius: 0.75rem;
+      border-radius: 1.15rem;
       background: #2e2e2e;
       color: #e7e7e7;
       padding: 1.25rem;`,
     },
     [
-      ce("div", {}, [titleBar]),
+      modalTitleBar,
       ce("div", { style: `font-size: 1.66rem;` }, [
-        inspectTab,
-        otherTab,
-        rawDataTab,
+        modalInspectView,
+        modalOtherView,
+        modalRawDataView,
       ]),
     ],
   )
 
-  const _backdrop = ce("div", {
+  const modalBackdrop = ce("div", {
     id: "backdrop",
     style: `
     background-color: rgb(0 0 0 / 0.33);
     position: fixed;
-    inset: 0;
-    z-index: 1;`,
+    inset: 0;`,
   })
 
-  inspectorShadow.append(_scopedStyles, _modalContainer, _backdrop)
+  inspectorShadow.append(modalStyles, modalContainer, modalBackdrop)
 
   /* ================= MODAL CONTENTS END ================= */
 
@@ -248,8 +267,8 @@
     inspectorModalRoot.classList.remove("active")
   }
 
-  _backdrop.addEventListener("click", closeInspectorModal)
-  closeBtn.addEventListener("click", closeInspectorModal)
+  modalBackdrop.addEventListener("click", closeInspectorModal)
+  modalCloseBtn.addEventListener("click", closeInspectorModal)
 
   /* ================= INJECT METADATA BUTTON ================= */
   const metadataButton = ce(
@@ -352,6 +371,7 @@
     }
 
     debugLog("Data response", channelData)
+    debugLog("Raw contents", { _header, _metadata })
   }
 
   window.addEventListener("yt-navigate-finish", handleChannelData)
