@@ -6,6 +6,5 @@ A collection of browser scripts I use
 
 - YouTube
   - A channel inspector to get data with full banner and high quality avatar
-  - Sanitize external links by replacing `youtube.com?redirect=`
 - Cloudflare
   - WAF extractor from Cloudflare Dashboard
