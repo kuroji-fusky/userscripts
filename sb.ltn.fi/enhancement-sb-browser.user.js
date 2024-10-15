@@ -289,6 +289,8 @@ const route = /** @type {const} */ ({
     const isDownvoted = rowItem.votes <= -2
     const hideRowEntry = !(!isDownvoted && !isHidden && !isShadowHidden)
 
+    debugLog("ln 286: parsedSBData() => hideRowEntry", hideRowEntry)
+
     return { ...others, hideRowEntry }
   })
   /*********************
@@ -358,25 +360,30 @@ const route = /** @type {const} */ ({
   [class^="segment_"] #label {
     font-size: 14px;
     flex-shrink: 0;
+    width: 100%;
   }
   [class^="segment_"]::before,
   [class^="segment_"]::after {
     content: '';
     background-color: var(--segment-color);
-  }
-  [class^="segment_"]::before {
-    --size: 0.8rem;
-    display: block;
-    flex-shrink: 0;
-    width: var(--size);
-    height: var(--size);
-    border-radius: 9999px;
+    }
+    [class^="segment_"]::before {
+      --size: 0.8rem;
+      display: block;
+      flex-shrink: 0;
+      width: var(--size);
+      height: var(--size);
+      border-radius: 9999px;
   }
   [class^="segment_"]::after {
     position: absolute;
     inset: 0;
     opacity: .125;
-  }`
+    }
+    .segment_chapter #label {
+      text-decoration: underline dashed;
+    }
+    `
 
   document.body.prepend(
     createElement(
@@ -391,11 +398,30 @@ const route = /** @type {const} */ ({
 
     _ref.classList.add("segment-cell")
 
-    _ref.innerHTML = ""
     // Lazy AF implementation
+    if (text === "chapter") {
+      let chapterTitle
+      chapterTitle = _ref.firstChild?.title
+
+      _ref.innerHTML = ""
+
+      const segTag = createElement("div", {})
+      segTag.classList.add(`segment_${text}`)
+
+      segTag.innerHTML = `<span id="label">${chapterTitle}</span>`
+      _ref.append(segTag)
+
+      return
+    }
+
+    _ref.innerHTML = ""
+
     const segTag = createElement("div", {})
     segTag.classList.add(`segment_${text}`)
+
     segTag.innerHTML = `<span id="label">${SB_SEGMENTS[text].text}</span>`
+    // SB_SEGMENTS[text].text === "chapter"
+    //   ? `<span id="label" style="text-decoration: underline;">Chapter text</span>`
 
     _ref.append(segTag)
   })
@@ -408,7 +434,6 @@ const route = /** @type {const} */ ({
    *
    ***************************************************************/
   const renderPill = (text, { bg, fg }) => {}
-
   const parseSegment2Pills = () => {}
 
   const parseLockedSegments = (element) => {

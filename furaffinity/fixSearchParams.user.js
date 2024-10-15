@@ -1,74 +1,93 @@
 // ==UserScript==
-// @name         Fix Search Params
+// @name         Fix Search URL Params
 // @description  Adds back a sharable URL containing search parameters on FurAffinity
 // @version      2024-07-20
 // @author       Kuroji Fusky
-// @match        https://www.furaffinity.net/*
+// @match        https://www.furaffinity.net/search/*
+// @icon         https://www.google.com/s2/favicons?sz=128&domain=furaffinity.net
+// @grant        none
 // ==/UserScript==
-"use strict"
-/**
- * @typedef FASearchParams
- * @prop {"1" | null=} rating-general
- * @prop {"1" | null=} rating-mature
- * @prop {"1" | null=} rating-adult
- * @prop {"1" | null=} type-art
- * @prop {"1" | null=} type-music
- * @prop {"1" | null=} type-photos
- * @prop {"1" | null=} type-flash
- * @prop {"1" | null=} type-story
- */
-
-const parseItems = () => {}
-const compareObjectToUrl = () => {}
-
-// =========================================
-// Entry point
-// =========================================
-;(function () {
-  const __d = document
-
-  const { pathname: _path } = window.location
-
-  const isSearchRoute = _path.includes("/search")
-  const isBrowseRoute = _path.includes("/browse")
-
-  // default values
-  const searchDefaults = {}
-  /** @type {FASearchParams} */
-  const browseDefaults = {
-    do_search: "Search",
-    "order-by": "relevancy",
-    "order-direction": "desc",
-    range: "5years",
-    range_from: "",
-    range_to: "",
-    "rating-general": "1",
-    "rating-mature": null,
-    "rating-adult": null,
-
-    "type-art": "1",
-    "type-music": "1",
-    "type-photos": "1",
-    "type-flash": "1",
-    "type-story": "1",
-
-    mode: "extended",
+(function () {
+  "use strict"
+  function _$(s) {
+    return document.querySelector(s)
   }
 
-  const searchSidebarEl = __d.querySelector(".sidebar-browse-container")
+  function _serializeAsParams(o) {
+    return Object.entries(o)
+      .map(([k, v], i) => {
+        return `${i === 1 ? "&" : "?"}${k}=${encodeURIComponent(v)}`
+      })
+      .join("")
+  }
 
-  const handleRouteShits = () => {
-    if (isBrowseRoute) {
-      console.log("browse page", searchSidebarEl)
-    }
+  const BASE_SEARCH_URL = `${location.protocol}//${location.hostname}${location.pathname}`
 
-    if (isSearchRoute) {
-      console.log("search page", searchSidebarEl)
+  const selectors = {
+    formContainer: `form#search-form`,
+    formSearchBox: `from#searchbox`,
+
+    // Search inputs
+    navSearchInput: `nav#ddmenu input[name="q"]`,
+
+    sidebarSearchInput: `.sidebar-browse-container .browser-sidebar-search-box input`,
+    sidebarSearchButton: `.sidebar-browse-container .browser-sidebar-search-box button`,
+
+    // ! This is only shown if no query is provided on mobile viewports
+    gallerySearchInput: `.gallery-section input[name="q"]`,
+
+    // Sort criteria
+    criteriaOrderBy: `select[name="order-by"]`,
+    criteriaOrderDirection: `select[name="order-direction"]`,
+
+    // Range
+    rangeInputs: `.gridContainer:nth-child(1) .gridContainer__item input`,
+
+    // Ratings
+    ratingInputs: `.gridContainer:nth-child(3) .gridContainer__item input`,
+
+    // Submission type
+    submissionTypeInputs: `.gridContainer:nth-child(4) .gridContainer__item input`,
+
+    // Matching keywords
+    matchingKeywordInputs: `.gridContainer:nth-child(5) .gridContainer__item input`,
+  }
+
+  // Strip form actions
+  const formSelectors = [selectors.formSearchBox, selectors.formContainer]
+
+  formSelectors.forEach((selector) => {
+    const formElement = _$(selector)
+    if (!formElement) return
+
+    formElement.removeAttribute("method")
+    formElement.removeAttribute("action")
+  })
+
+  // Override events
+  const searchInputSelectors = [
+    selectors.sidebarSearchInput,
+    selectors.gallerySearchInput,
+    selectors.navSearchInput,
+  ]
+
+  const overrideSearchParamInput = (e) => {
+    if (e.key === "Enter") {
+      // This is to prevent inputs from forms from sending a request
+      e.preventDefault()
+
+      console.log(e.target.value)
+
+      return false
     }
   }
 
-  handleRouteShits()
+  searchInputSelectors.forEach((selector) => {
+    const inputElement = _$(selector)
+    if (!inputElement) return
 
-  // Retrigger event from navigation
-  window.addEventListener("pageshow", handleRouteShits)
+    console.log("mounting selector", selector)
+
+    inputElement.addEventListener("keydown", overrideSearchParamInput)
+  })
 })()
