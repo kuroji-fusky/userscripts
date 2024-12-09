@@ -8,7 +8,6 @@
 // ==/UserScript==
 "use strict"
 
-const CURRENT_DATE = new Date()
 
 const debugLog = (...msg) => console.debug("[sbb-debug]", ...msg)
 
@@ -41,6 +40,7 @@ const kuroDOM = {
   },
 }
 
+const CURRENT_DATE = new Date()
 const SECONDS = 60
 const MILLISECONDS = 1000
 
