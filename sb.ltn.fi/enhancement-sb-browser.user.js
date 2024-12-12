@@ -16,9 +16,11 @@ const kuroDOM = {
   $$: (selector, target = document) => Array.from(target.querySelectorAll(selector)),
   create: (tag, attrs, content) => {
     const isArray = (arr) => Array.isArray(arr)
+    const isTypeObj = (_obj) => typeof _obj === "object"
+
     const element = document.createElement(tag)
 
-    if (!(typeof attrs === "object" && !isArray(attrs) && attrs !== null)) return element
+    if (!(isTypeObj(attrs) && !isArray(attrs) && attrs !== null)) return element
 
     Object.entries(attrs).forEach(([k, v]) => {
       element.setAttribute(k, v)
@@ -28,7 +30,7 @@ const kuroDOM = {
       content.forEach((innerElement) => element.append(innerElement))
       return element
     }
-    if (content && typeof content === "object") {
+    if (content && isTypeObj(content)) {
       element.append(content)
       return element
     }
@@ -36,6 +38,7 @@ const kuroDOM = {
       element.textContent = content
       return element
     }
+
     return element
   },
 }
