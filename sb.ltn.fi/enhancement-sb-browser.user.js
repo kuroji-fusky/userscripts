@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Enhancements for SB Browser
-// @version      2024-12-03
+// @version      2025-01-15
 // @description  An enhancement for SBbrowser that has additional functionality such as colored segments and video titles and thumbnails via the YouTube Data API
 // @author       Kuroji Fusky
 // @match        https://sb.ltn.fi/*
@@ -284,7 +284,7 @@ const route = /** @type {const} */ ({
     preview: { text: "Preview/Recap/Hook", color: "#008fd6" },
     music_offtopic: { text: "Non-Music", color: "#ff9900" },
     poi_highlight: { text: "Highlight", color: "#ff1684" },
-    filler: { text: "Filler", color: "#7300ff" },
+    filler: { text: "Tangents/Jokes", color: "#7300ff" },
     exclusive_access: { text: "Exclusive Access", color: "#008a5c" },
   }
 
