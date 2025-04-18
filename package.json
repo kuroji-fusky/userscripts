@@ -1,0 +1,20 @@
+{
+  "name": "kuro-userscripts",
+  "version": "0.0.0",
+  "license": "ISC",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "only-allow": "^1.2.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild"
+    ]
+  }
+}
