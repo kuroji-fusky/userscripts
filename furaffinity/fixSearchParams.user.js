@@ -13,15 +13,26 @@
     return document.querySelector(s)
   }
 
-  function _serializeAsParams(o) {
-    return Object.entries(o)
-      .map(([k, v], i) => {
-        return `${i === 1 ? "&" : "?"}${k}=${encodeURIComponent(v)}`
-      })
-      .join("")
+  function _removeAttributes(dom, attributes) {
+    const isDOMValidElement = dom instanceof Element
+
+    if (typeof attributes !== "string") {
+      throw new TypeError(`'attribute' parameter should be string, but got ${typeof attributes}`)
+    }
+
+    if (!isDOMValidElement || !isDOMString) return
+
+    if (isDOMValidElement) {
+
+    }
   }
 
-  const BASE_SEARCH_URL = `${location.protocol}//${location.hostname}${location.pathname}`
+  function bulkRemoveAttributes(selector, attributes) {
+    if (typeof selector !== "string" || typeof attributes !== "string") return
+  }
+
+  const { protocol, hostname, pathname } = window.protocol
+  const BASE_SEARCH_URL = `${protocol}//${hostname}${pathname}`
 
   const selectors = {
     formContainer: `form#search-form`,
