@@ -1,13 +1,12 @@
 // ==UserScript==
 // @name         Enhancements for SB Browser
-// @version      2025-01-15
+// @version      2025-05-24
 // @description  An enhancement for SBbrowser that has additional functionality such as colored segments and video titles and thumbnails via the YouTube Data API
 // @author       Kuroji Fusky
 // @match        https://sb.ltn.fi/*
 // @icon         https://sb.ltn.fi/static/browser/logo.png
 // ==/UserScript==
 "use strict"
-
 
 const debugLog = (...msg) => console.debug("[sbb-debug]", ...msg)
 
@@ -22,12 +21,14 @@ const kuroDOM = {
 
     if (!(isTypeObj(attrs) && !isArray(attrs) && attrs !== null)) return element
 
-    Object.entries(attrs).forEach(([k, v]) => {
+    for (const [k, v] of Object.entries(attrs)) {
       element.setAttribute(k, v)
-    })
+    }
 
     if (content && isArray(content)) {
-      content.forEach((innerElement) => element.append(innerElement))
+      for (const innerElement of content) {
+        element.append(innerElement)
+      }
       return element
     }
     if (content && isTypeObj(content)) {
@@ -99,7 +100,7 @@ const route = /** @type {const} */ ({
   document.body.prepend(
     kuroDOM.create(
       "style",
-      {},
+      { id: "SBB_BEAUTIFY" },
       `
       textarea {
         border: none !important;
@@ -173,7 +174,7 @@ const route = /** @type {const} */ ({
  * @prop {boolean} isHidden
  */
   /** @type {TableData[]} */
-  const parsedTableData = /** @returns {TableData[]} */ (function () {
+  const parsedTableData = /** @returns {TableData[]} */ (() => {
     let mappedData = []
 
     // prettier-ignore
@@ -259,9 +260,9 @@ const route = /** @type {const} */ ({
  *********************/
   if (parsedSBData.length === 0) return
 
-  parsedSBData.forEach(({ hideRowEntry, domTarget }) => {
+  for (const { hideRowEntry, domTarget } of parsedSBData) {
     if (hideRowEntry) domTarget.classList.add("segment-hidden")
-  })
+  }
 
   // Append proper titles
   if (route.username) {
@@ -294,7 +295,7 @@ const route = /** @type {const} */ ({
  *
  ***************************************************************/
   const segmentCSSProperties = Object.entries(SB_SEGMENTS)
-    .map(([k, v]) => `.segment_${k}{--segment-color:${v.color};}`)
+    .map(([k, v]) => `.segment_${k}{ --segment-color:${v.color}; }`)
     .join("\n")
 
   const inlineSegmentStyles = `
@@ -344,27 +345,33 @@ const route = /** @type {const} */ ({
       font-weight: 600;
       text-decoration-color: #9b9b9b;
     }
-    .light tr.new-item {
+    .light .item-archived {
+      background-color: rgba(123 255 110 / 20%);
+    }
+    .dark .item-archived {
+      background-color: rgba(2 65 7 / 20%);
+    }
+    .light .new-item {
       background-color: rgba(250, 223, 78, 0.2);
     }
-    .dark tr.new-item {
+    .dark .new-item {
       background-color: rgba(65, 55, 2, 0.2);
     }
-    .light tr.unable-to-fetch {
+    .light .unable-to-fetch {
       background-color: rgba(255, 168, 168, 0.2);
     }
-    .dark tr.unable-to-fetch {
+    .dark .unable-to-fetch {
       background-color: rgba(98, 3, 3, 0.2);
     }
     .title-pad {
-      background: #7777772e;;
+      background: #7777772e;
       padding: 1px 7px;
       border-radius: 6px;
     }
     `
 
   document.body.prepend(
-    kuroDOM.create("style", { id: "color-segments" }, [segmentCSSProperties, inlineSegmentStyles].join("\n"))
+    kuroDOM.create("style", { id: "SBB_COLOR_SEGMENTS" }, [segmentCSSProperties, inlineSegmentStyles].join("\n"))
   )
 
   parsedSBData.forEach((cell) => {
@@ -523,9 +530,11 @@ const route = /** @type {const} */ ({
 
   let _temp$UncachedIds = []
 
-  const appendYTData = (el, channelId, channelTitle, videoId, videoTitle) => {
+  const appendYTData = (el, data, archivedVersion = false) => {
+    const { channelId, channelTitle, videoId, videoTitle } = data
+
     const videoThumbnail = kuroDOM.create("img", {
-      src: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      src: !archivedVersion ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : `https://filmot.com/vi/${videoId}/default.jpg`,
       id: "video-thumbnail",
       style:
         "aspect-ratio: 16/9;height: 4.5rem;border-radius: 0.33rem;float: left;margin-right: 0.5rem;object-fit:cover;",
@@ -566,63 +575,122 @@ const route = /** @type {const} */ ({
       const {
         id: cacheId,
         contents: { title: cacheTitle, channelId: cacheChannelId, channelName: cacheChannelName },
+        source
       } = hasCacheItems
 
       currentCacheIndex++
 
       console.log("[debug] cache hit  👀 ", `${cacheId}:`, cacheTitle)
 
-      domTargets.forEach((element) => appendYTData(element, cacheChannelId, cacheChannelName, currentVideoId, cacheTitle))
+      console.log("cached vid", currentVideoId, " src ->", source)
+
+      domTargets.forEach((element) => {
+        const isItFilmotTho = source === "filmot"
+
+        appendYTData(element, {
+          channelId: cacheChannelId,
+          channelTitle: cacheChannelName,
+          videoId: currentVideoId,
+          videoTitle: cacheTitle
+        }, isItFilmotTho)
+
+        if (isItFilmotTho) {
+          element.parentElement.classList.add("item-archived")
+        }
+      })
     }
   })
 
   // Check for any cached videos that needs to be deducted and not 0
-  if (fetchTargLen - currentCacheIndex !== 0) {
-    // TODO consolidate the uncached video ids into one request
-    fetchTargets.forEach(async ({ videoId: currentVideoId, domTargets }) => {
-      const _asyncDeductCachedIndex = fetchTargLen - currentCacheIndex
+  if (fetchTargLen - currentCacheIndex === 0) return
 
-      // debugLog("[async foreach] _asyncDeductCachedIndex:", _asyncDeductCachedIndex)
+  // TODO consolidate the uncached video ids into one request
+  fetchTargets.forEach(async ({ videoId: currentVideoId, domTargets }) => {
+    const _asyncDeductCachedIndex = fetchTargLen - currentCacheIndex
 
-      const ytUrl = `https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails&id=${currentVideoId}&key=${YT_API_KEY}`
+    const ytUrl = `https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails&id=${currentVideoId}&key=${YT_API_KEY}`
 
-      // Cache if there aren't any
-      if (!cachedIds.find((cachedItem) => cachedItem.id === currentVideoId)) {
-        const ytFetch = await fetch(ytUrl)
-        const ytData = await ytFetch.json()
+    // Cache if there aren't any
+    if (cachedIds.find((cachedItem) => cachedItem.id === currentVideoId)) return
 
-        const ytVideoItem = ytData.items[0]
+    const ytFetch = await fetch(ytUrl)
+    const ytData = await ytFetch.json()
 
-        currentFetchedIndex++
+    const ytVideoItem = ytData.items[0]
 
-        if (!ytVideoItem) {
-          console.warn(`Video id ${currentVideoId} is either private or deleted`)
-          domTargets.forEach((element) => element.parentNode.classList.add("unable-to-fetch"))
-          return
-        }
+    currentFetchedIndex++
 
-        const { title, channelTitle, channelId } = ytVideoItem.snippet
-
-        console.debug("[debug] cache miss ❌ |", currentVideoId, "--", title)
-
-        _temp$UncachedIds.push({
-          id: currentVideoId,
-          contents: {
-            title: title,
-            channelName: channelTitle,
-            channelId: channelId,
-          },
-          date: CURRENT_DATE.toISOString(),
-          at: location.href,
-        })
-
-        domTargets.forEach((element) => {
-          appendYTData(element, channelId, channelTitle, currentVideoId, title)
-          element.parentNode.classList.add("new-item")
-        })
-
-        if (currentFetchedIndex == _asyncDeductCachedIndex) pushToCache()
+    
+    if (!ytVideoItem) {
+      const FILMOT_API_KEY = localStorage.getItem("filmot-api")
+      if (!FILMOT_API_KEY) {
+        console.error("Filmot API not specified; won't be fetching archived videos;", 'type `localStorage.setItem("filmot-api", "<YOUR_API_KEY>")` to dismiss the error')
+        domTargets.forEach((element) => element.parentNode.classList.add("unable-to-fetch"))
+        return
       }
+
+      // Fallback to Filmot API to get private/deleted videos
+      const filmotRes = await fetch(`https://filmot.com/api/getvideos?key=${FILMOT_API_KEY}&id=${currentVideoId}&flags=1`)
+      const filmotJson = await filmotRes.json()
+
+      if (filmotJson.length === 0) {
+        console.warn(`Couldn't retrieve archived info on ID: ${currentVideoId}`)
+        domTargets.forEach((element) => element.parentNode.classList.add("unable-to-fetch"))
+        return
+      }
+
+      const filmotVid = filmotJson[0]
+
+      currentFetchedIndex++
+
+      _temp$UncachedIds.push({
+        id: filmotVid.id,
+        contents: {
+          title: filmotVid.title,
+          channelName: filmotVid.channelname,
+          channelId: filmotVid.channelid,
+        },
+        date: CURRENT_DATE.toISOString(),
+        at: location.href,
+        source: "filmot"
+      })
+
+      domTargets.forEach((element) => {
+        appendYTData(element, {
+          channelId: filmotVid.channelid,
+          channelTitle: filmotVid.channelname,
+          videoId: currentVideoId,
+          videoTitle: filmotVid.title
+        }, true)
+
+        element.parentNode.classList.add("item-archived")
+      })
+
+      pushToCache()
+      return
+    }
+
+    const { title, channelTitle, channelId } = ytVideoItem.snippet
+
+    console.debug("[debug] cache miss ❌ |", currentVideoId, "--", title)
+
+    _temp$UncachedIds.push({
+      id: currentVideoId,
+      contents: {
+        title: title,
+        channelName: channelTitle,
+        channelId: channelId,
+      },
+      date: CURRENT_DATE.toISOString(),
+      at: location.href,
+      source: "googleapis.youtube"
     })
-  }
+
+    domTargets.forEach((element) => {
+      appendYTData(element, { channelId, channelTitle, videoId: currentVideoId, videoTitle: title })
+      element.parentNode.classList.add("new-item")
+    })
+
+    if (currentFetchedIndex == _asyncDeductCachedIndex) pushToCache()
+  })
 })()
