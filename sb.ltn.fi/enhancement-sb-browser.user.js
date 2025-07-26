@@ -191,7 +191,7 @@ const route = /** @type {const} */ ({
     })
 
     if (route.main)
-      columns.forEach((col) => {
+      for (const col of columns) {
         const [date, id, , , , votes, views, category, , hidden, shadowhidden, , , ,] = col
         // Table col order: date,id,start,end,length,votes,view,category,action,hidden,shadowhidden,uuid,user,userid
         const domTarget = date.parentElement
@@ -205,10 +205,10 @@ const route = /** @type {const} */ ({
           parseTableText(shadowhidden, { checkEmptyString: true }),
           parseTableText(hidden, { checkEmptyString: true })
         )
-      })
+      }
 
     if (route.username || route.userid)
-      columns.forEach((col) => {
+      for (const col of columns) {
         const [date, id, , , , votes, views, category, shadowhidden, , , hidden] = col
         // Table col order: date,id,start,end,length,votes,view,category,shadowhidden,uuid,action,hidden,userid
         const domTarget = date.parentElement
@@ -222,10 +222,10 @@ const route = /** @type {const} */ ({
           parseTableText(shadowhidden, { checkEmptyString: true }),
           parseTableText(hidden, { checkEmptyString: true })
         )
-      })
+      }
 
     if (route.video || route.uuid)
-      columns.forEach((col) => {
+      for (const col of columns) {
         const [date, , , , votes, views, category, shadowhidden, , , hidden, ,] = col
         // Table col order: date,start,end,length,votes,view,category,shadowhidden,uuid,username,action,hidden,userid
         const domTarget = date.parentElement
@@ -239,7 +239,7 @@ const route = /** @type {const} */ ({
           parseTableText(shadowhidden, { checkEmptyString: true }),
           parseTableText(hidden, { checkEmptyString: true })
         )
-      })
+      }
 
     return mappedData
   })()
@@ -376,7 +376,7 @@ const route = /** @type {const} */ ({
     kuroDOM.create("style", { id: "SBB_COLOR_SEGMENTS" }, [segmentCSSProperties, inlineSegmentStyles].join("\n"))
   )
 
-  parsedSBData.forEach((cell) => {
+  for (const cell of parsedSBData) {
     const { text, _ref } = cell.segment
 
     _ref.classList.add("segment-cell")
@@ -408,7 +408,7 @@ const route = /** @type {const} */ ({
     segTag.innerHTML = `<span id="label">${SB_SEGMENTS[text].text}</span>`
 
     _ref.append(segTag)
-  })
+  }
 
   /***************************************************************
  *
@@ -427,7 +427,7 @@ const route = /** @type {const} */ ({
     const [, , lockedSkips, lockedMutes, lockedFulls, ,] = Array.from(element.children)
     const lockedSegmentGroupArr = [lockedSkips, lockedMutes, lockedFulls]
 
-    lockedSegmentGroupArr.forEach((lockedAction) => {
+    for (const lockedAction of lockedSegmentGroupArr) {
       const hasLockedSegments = !lockedAction.textContent.match(/—/)
 
       if (hasLockedSegments)
@@ -438,7 +438,7 @@ const route = /** @type {const} */ ({
             reason: segment.title,
           }))
         )
-    })
+    }
   }
 
   if (route.video) parseLockedSegments(kuroDOM.$(".row.mt-2 > .col-auto > .list-group"))
@@ -505,7 +505,7 @@ const route = /** @type {const} */ ({
 
   // TODO do the same logic for route.video and route.uuid
   if (!(hasVideoData && hasPreciousData)) return
-  parsedSBData.forEach(({ videoId }) => {
+  for (const { videoId } of parsedSBData) {
     const realVideoId = videoId?.text
 
     // Check if the id exists, if not add them
@@ -515,7 +515,7 @@ const route = /** @type {const} */ ({
         videoId: realVideoId,
       })
     }
-  })
+  }
 
   parsedSBData.forEach(({ videoId }) => {
     const { domTargets } = fetchTargets.find((target) => target.videoId === videoId?.text)
@@ -586,7 +586,7 @@ const route = /** @type {const} */ ({
 
       console.log("cached vid", currentVideoId, " src ->", source)
 
-      domTargets.forEach((element) => {
+      for (const element of domTargets) {
         const isItFilmotTho = source === "filmot"
 
         appendYTData(element, {
@@ -599,7 +599,7 @@ const route = /** @type {const} */ ({
         if (isItFilmotTho) {
           element.parentElement.classList.add("item-archived")
         }
-      })
+      }
     }
   })
 
@@ -622,12 +622,13 @@ const route = /** @type {const} */ ({
 
     currentFetchedIndex++
 
-
     if (!ytVideoItem) {
       const FILMOT_API_KEY = localStorage.getItem("filmot-api")
       if (!FILMOT_API_KEY) {
         console.error("Filmot API not specified; won't be fetching archived videos;", 'type `localStorage.setItem("filmot-api", "<YOUR_API_KEY>")` to dismiss the error')
-        domTargets.forEach((element) => element.parentNode.classList.add("unable-to-fetch"))
+        for (const element of domTargets) {
+          element.parentNode.classList.add("unable-to-fetch")
+        }
         return
       }
 
@@ -637,7 +638,9 @@ const route = /** @type {const} */ ({
 
       if (filmotJson.length === 0) {
         console.warn(`Couldn't retrieve archived info on ID: ${currentVideoId}`)
-        domTargets.forEach((element) => element.parentNode.classList.add("unable-to-fetch"))
+        for (const element of domTargets) {
+          element.parentNode.classList.add("unable-to-fetch")
+        }
         return
       }
 
@@ -657,7 +660,7 @@ const route = /** @type {const} */ ({
         source: "filmot"
       })
 
-      domTargets.forEach((element) => {
+      for (const element of domTargets) {
         appendYTData(element, {
           channelId: filmotVid.channelid,
           channelTitle: filmotVid.channelname,
@@ -666,7 +669,7 @@ const route = /** @type {const} */ ({
         }, true)
 
         element.parentNode.classList.add("item-archived")
-      })
+      }
 
       pushToCache()
       return
@@ -688,10 +691,10 @@ const route = /** @type {const} */ ({
       source: "googleapis.youtube"
     })
 
-    domTargets.forEach((element) => {
+    for (const element of domTargets) {
       appendYTData(element, { channelId, channelTitle, videoId: currentVideoId, videoTitle: title })
       element.parentNode.classList.add("new-item")
-    })
+    }
 
     if (currentFetchedIndex == _asyncDeductCachedIndex) pushToCache()
   })
