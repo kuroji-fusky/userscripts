@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Enhancements for SB Browser
-// @version      2025-05-24
+// @version      2025-07-27
 // @description  An enhancement for SBbrowser that has additional functionality such as colored segments and video titles and thumbnails via the YouTube Data API
 // @author       Kuroji Fusky
 // @match        https://sb.ltn.fi/*
@@ -283,7 +283,8 @@ const route = /** @type {const} */ ({
     interaction: { text: "Interaction Reminder", color: "#6c0087" },
     intro: { text: "Intermission", color: "#00ffff" },
     outro: { text: "Endcards/Credits", color: "#0202ed" },
-    preview: { text: "Preview/Recap/Hook", color: "#008fd6" },
+    preview: { text: "Preview/Recap", color: "#008fd6" },
+    hook: { text: "Hook/Greetings", color: "#395699" },
     music_offtopic: { text: "Non-Music", color: "#ff9900" },
     poi_highlight: { text: "Highlight", color: "#ff1684" },
     filler: { text: "Tangents/Jokes", color: "#7300ff" },
@@ -621,7 +622,7 @@ const route = /** @type {const} */ ({
 
     currentFetchedIndex++
 
-    
+
     if (!ytVideoItem) {
       const FILMOT_API_KEY = localStorage.getItem("filmot-api")
       if (!FILMOT_API_KEY) {
