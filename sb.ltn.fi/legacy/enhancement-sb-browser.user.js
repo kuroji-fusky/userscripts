@@ -96,7 +96,7 @@ const route = /** @type {const} */ ({
   main: currentPath === "/",
 });
 
-// biome-ignore lint/complexity/useArrowFunction:
+// biome-ignore lint/complexity/useArrowFunction: special use case for browser scripts
 (function () {
   document.body.prepend(
     kuroDOM.create(
